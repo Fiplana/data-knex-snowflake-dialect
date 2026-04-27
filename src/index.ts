@@ -1,11 +1,11 @@
 import { Knex, knex } from "knex";
-import { defer, fromPairs, isArray, map, toPairs } from "lodash";
+import { defer, fromPairs, isArray, toPairs } from "lodash";
 import { QueryCompiler } from "./query/QueryCompiler";
 import { SchemaCompiler, TableCompiler } from "./schema";
 import * as ColumnBuilder from "knex/lib/schema/columnbuilder";
 import * as ColumnCompiler_MySQL from "knex/lib/dialects/mysql/schema/mysql-columncompiler";
 import * as Transaction from "knex/lib/execution/transaction";
-import { promisify } from "util";
+import { promisify } from "node:util";
 
 export class SnowflakeDialect extends knex.Client {
   constructor(config) {
@@ -29,17 +29,15 @@ export class SnowflakeDialect extends knex.Client {
 
   transaction(container: any, config: any, outerTx: any): Knex.Transaction {
     const transax = new Transaction(this, container, config, outerTx);
-    transax.savepoint = (conn: any) => {
-      // @ts-ignore
+    transax.savepoint = (_conn: any) => {
       transax.trxClient.logger('Snowflake does not support savepoints.');
     };
 
-    transax.release = (conn: any, value: any) => {
-      // @ts-ignore
+    transax.release = (_conn: any, _value: any) => {
       transax.trxClient.logger('Snowflake does not support savepoints.');
     };
 
-    transax.rollbackTo = (conn: any, error: any) => {
+    transax.rollbackTo = (_conn: any, _error: any) => {
       // @ts-ignore
       this.trxClient.logger('Snowflake does not support savepoints.');
     };
@@ -54,13 +52,11 @@ export class SnowflakeDialect extends knex.Client {
     // ColumnBuilder methods are created at runtime, so that it does not play well with TypeScript.
     // So instead of extending ColumnBuilder, we override methods at runtime here
     const columnBuilder = new ColumnBuilder(this, tableBuilder, type, args);
-    columnBuilder.primary = (constraintName?: string | undefined): Knex.ColumnBuilder => {
-      // @ts-ignore
+    columnBuilder.primary = (_constraintName?: string | undefined): Knex.ColumnBuilder => {
       columnBuilder.notNullable();
       return columnBuilder;
     };
-    columnBuilder.index = (indexName?: string | undefined): Knex.ColumnBuilder => {
-      // @ts-ignore
+    columnBuilder.index = (_indexName?: string | undefined): Knex.ColumnBuilder => {
       columnBuilder.client.logger.warn(
         'Snowflake does not support the creation of indexes.'
       );
@@ -77,7 +73,7 @@ export class SnowflakeDialect extends knex.Client {
     columnCompiler.increments = 'int not null autoincrement primary key';
     columnCompiler.bigincrements = 'bigint not null autoincrement primary key';
 
-      columnCompiler.mediumint = (colName: string) => "integer";
+      columnCompiler.mediumint = (_colName: string) => "integer";
     columnCompiler.decimal = (colName: string, precision?: number, scale?: number) => {
       if (precision) {
         return ColumnCompiler_MySQL.prototype.decimal(colName, precision, scale);
@@ -90,8 +86,8 @@ export class SnowflakeDialect extends knex.Client {
       }
       return "double";
     };
-    columnCompiler.enu = (colName: string, values: string[]) => "varchar";
-    columnCompiler.json = columnCompiler.jsonb = (colName: string) => "variant";
+    columnCompiler.enu = (_colName: string, _values: string[]) => "varchar";
+    columnCompiler.json = columnCompiler.jsonb = (_colName: string) => "variant";
     return columnCompiler;
   }
 
@@ -144,7 +140,7 @@ export class SnowflakeDialect extends knex.Client {
 
   async validateConnection(connection: any): Promise<boolean> {
     if (connection) {
-      return await connection.isValidAsync();
+      return connection.isValidAsync();
     }
     return false;
   }
